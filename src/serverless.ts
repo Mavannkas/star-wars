@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Server } from 'http';
-import { Handler, Context, } from 'aws-lambda';
+import { Handler, Context } from 'aws-lambda';
 import { createServer, proxy } from 'aws-serverless-express';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import * as express from 'express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 let cachedServer: Server;
 
@@ -14,6 +15,14 @@ async function bootstrap(): Promise<Server> {
     AppModule,
     new ExpressAdapter(expressApp),
   );
+  const config = new DocumentBuilder()
+    .setTitle('Star Wars API')
+    .setDescription('The Star Wars API')
+    .setVersion('1.0')
+    .addTag('character')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('doc', app, document);
   await app.init();
   return createServer(expressApp);
 }

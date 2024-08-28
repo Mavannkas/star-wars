@@ -7,10 +7,11 @@ Resources:
       Handler: ./dist/serverless.handler
       Runtime: nodejs20.x
       MemorySize: 512
-      Timeout: 10
+      Timeout: 100
       Environment:
         Variables:
           NODE_ENV: production
+          MONGOOSE_URL: mongodb://localhost:27017/starwars
       Events:
         Api:
           Type: Api
