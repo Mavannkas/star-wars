@@ -21,8 +21,8 @@ export class CharacterController {
   }
 
   @Get()
-  findAll() {
-    return this.characterService.findAll();
+  search() {
+    return this.characterService.search();
   }
 
   @Get(':id')

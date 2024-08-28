@@ -11,13 +11,23 @@ Resources:
       Environment:
         Variables:
           NODE_ENV: production
-          MONGOOSE_URL: mongodb://localhost:27017/starwars
+          MONGOOSE_URL: mongodb://localhost:27017/star-wars
       Events:
         Api:
           Type: Api
           Properties:
             Path: /
             Method: ANY
+        DocumentationRoot:
+          Type: Api
+          Properties:
+            Path: /doc
+            Method: GET
+        DocumentationAssets:
+          Type: Api
+          Properties:
+            Path: /doc/{proxy+}
+            Method: GET
 
 Outputs:
   StarWarsApi:
