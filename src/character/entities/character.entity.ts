@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-export type CatDocument = HydratedDocument<Character>;
+export type CharacterDocument = HydratedDocument<Character>;
 
 @Schema()
 export class Character {
@@ -19,4 +19,4 @@ export class Character {
   planet?: string;
 }
 
-export const CatSchema = SchemaFactory.createForClass(Character);
+export const CharacterSchema = SchemaFactory.createForClass(Character);

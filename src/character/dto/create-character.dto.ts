@@ -12,6 +12,8 @@ import {
 export class CreateCharacterDto {
   @IsString()
   @IsNotEmpty()
+  @Min(2)
+  @Max(255)
   name: string;
 
   @IsOptional()
@@ -27,5 +29,5 @@ export class CreateCharacterDto {
   @IsNotEmpty()
   @Min(2)
   @Max(255)
-  planets?: string;
+  planet?: string;
 }

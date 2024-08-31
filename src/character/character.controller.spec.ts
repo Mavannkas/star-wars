@@ -9,7 +9,18 @@ describe('CharacterController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CharacterController],
-      providers: [CharacterService],
+      providers: [
+        {
+          provide: CharacterService,
+          useValue: {
+            create: jest.fn(),
+            search: jest.fn(),
+            findOne: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<CharacterService>(CharacterService);
