@@ -12,6 +12,8 @@ import { CharacterService } from './character.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
 import { SearchCharactersDto } from './dto/search-characters.dto';
+import { Types } from 'mongoose';
+import { ValidateObjectIdPipe } from 'src/pipes/validate-object-id/validate-object-id.pipe';
 
 @Controller('character')
 export class CharacterController {
@@ -28,20 +30,20 @@ export class CharacterController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ValidateObjectIdPipe) id: Types.ObjectId) {
     return this.characterService.findOne(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ValidateObjectIdPipe) id: string,
     @Body() updateCharacterDto: UpdateCharacterDto,
   ) {
     return this.characterService.update(id, updateCharacterDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ValidateObjectIdPipe) id: string) {
     return this.characterService.remove(id);
   }
 }

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CharacterController } from './character.controller';
 import { CharacterService } from './character.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
+import mongoose from 'mongoose';
 
 describe('CharacterController', () => {
   let controller: CharacterController;
@@ -34,7 +35,7 @@ describe('CharacterController', () => {
   it('should call characterService.create with dto', async () => {
     // Given
     const dto = { name: 'Test', age: 20 } as CreateCharacterDto;
-    const createResponse = 'This action adds a new character';
+    const createResponse = new mongoose.Types.ObjectId();
     jest.spyOn(service, 'create').mockResolvedValue(createResponse);
     // When
     const response = await controller.create(dto);
@@ -48,7 +49,7 @@ describe('CharacterController', () => {
   it('should call characterService.search with query', async () => {
     // Given
     const query = { name: 'Test', age: 20 } as any;
-    const searchResponse = 'This action returns all character';
+    const searchResponse = new mongoose.Types.ObjectId();
     jest.spyOn(service, 'search').mockResolvedValue(searchResponse);
 
     // When
@@ -63,7 +64,7 @@ describe('CharacterController', () => {
   it('should call characterService.findOne with id', async () => {
     // Given
     const id = '1';
-    const findOneResponse = 'This action returns a #1 character';
+    const findOneResponse = new mongoose.Types.ObjectId();
     jest.spyOn(service, 'findOne').mockResolvedValue(findOneResponse);
 
     // When
@@ -79,7 +80,7 @@ describe('CharacterController', () => {
     // Given
     const id = '1';
     const dto = { name: 'Test', age: 20 } as CreateCharacterDto;
-    const updateResponse = 'This action updates a #1 character';
+    const updateResponse = new mongoose.Types.ObjectId();
     jest.spyOn(service, 'update').mockResolvedValue(updateResponse);
 
     // When
@@ -94,7 +95,7 @@ describe('CharacterController', () => {
   it('should call characterService.remove with id', async () => {
     // Given
     const id = '1';
-    const removeResponse = 'This action removes a #1 character';
+    const removeResponse = new mongoose.Types.ObjectId();
     jest.spyOn(service, 'remove').mockResolvedValue(removeResponse);
 
     // When
