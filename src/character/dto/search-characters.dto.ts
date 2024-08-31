@@ -1,23 +1,42 @@
-import { IsArray, IsOptional, IsString, Min } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsNumberString,
+  IsOptional,
+  IsString,
+  MinLength,
+  Validate,
+} from 'class-validator';
 
 export class SearchCharactersDto {
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  @Min(1, { each: true })
-  episodes?: string[];
+  @IsString()
+  @MinLength(1)
+  @ApiPropertyOptional({ type: String, description: 'Episode name' })
+  episode: string;
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  @Min(1, { each: true })
-  planets?: string[];
+  @IsString()
+  @MinLength(1)
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Planet name',
+  })
+  planet?: string;
 
-  @Min(1)
   @IsOptional()
-  page: number = 1;
+  @IsNumberString()
+  //Min value 1
+  @Validate((value) => +value >= 1, {
+    message: 'Page number should be greater than or equal to 1',
+  })
+  @ApiPropertyOptional({ type: Number, description: 'Page number' })
+  page?: string;
 
-  @Min(1)
   @IsOptional()
-  limit: number = 10;
+  @IsNumberString()
+  @Validate((value) => +value >= 1, {
+    message: 'Page number should be greater than or equal to 1',
+  })
+  @ApiPropertyOptional({ type: Number, description: 'Limit of results' })
+  limit?: string;
 }
