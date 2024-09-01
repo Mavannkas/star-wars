@@ -3,7 +3,11 @@ import { CharacterController } from './character.controller';
 import { CharacterService } from './character.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import mongoose from 'mongoose';
+import { Character } from './entities/character.entity';
 
+const id = new mongoose.Types.ObjectId();
+
+const characterResponse = {} as Character;
 describe('CharacterController', () => {
   let controller: CharacterController;
   let service: CharacterService;
@@ -49,8 +53,8 @@ describe('CharacterController', () => {
   it('should call characterService.search with query', async () => {
     // Given
     const query = { name: 'Test', age: 20 } as any;
-    const searchResponse = new mongoose.Types.ObjectId();
-    jest.spyOn(service, 'search').mockResolvedValue(searchResponse);
+    const searchResponse = [characterResponse];
+    jest.spyOn(service, 'search').mockResolvedValue([characterResponse]);
 
     // When
     const response = await controller.search(query);
@@ -63,46 +67,40 @@ describe('CharacterController', () => {
 
   it('should call characterService.findOne with id', async () => {
     // Given
-    const id = '1';
-    const findOneResponse = new mongoose.Types.ObjectId();
-    jest.spyOn(service, 'findOne').mockResolvedValue(findOneResponse);
+    jest.spyOn(service, 'findOne').mockResolvedValue(characterResponse);
 
     // When
     const response = await controller.findOne(id);
 
     // Then
-    expect(response).toEqual(findOneResponse);
+    expect(response).toEqual(characterResponse);
     expect(service.findOne).toHaveBeenCalledTimes(1);
     expect(service.findOne).toHaveBeenCalledWith(id);
   });
 
   it('should call characterService.update with id and dto', async () => {
     // Given
-    const id = '1';
     const dto = { name: 'Test', age: 20 } as CreateCharacterDto;
-    const updateResponse = new mongoose.Types.ObjectId();
-    jest.spyOn(service, 'update').mockResolvedValue(updateResponse);
+    jest.spyOn(service, 'update').mockResolvedValue(characterResponse);
 
     // When
     const response = await controller.update(id, dto);
 
     // Then
-    expect(response).toEqual(updateResponse);
+    expect(response).toEqual(characterResponse);
     expect(service.update).toHaveBeenCalledTimes(1);
     expect(service.update).toHaveBeenCalledWith(id, dto);
   });
 
   it('should call characterService.remove with id', async () => {
     // Given
-    const id = '1';
-    const removeResponse = new mongoose.Types.ObjectId();
-    jest.spyOn(service, 'remove').mockResolvedValue(removeResponse);
+    jest.spyOn(service, 'remove').mockResolvedValue(characterResponse as any);
 
     // When
     const response = await controller.remove(id);
 
     // Then
-    expect(response).toEqual(removeResponse);
+    expect(response).toEqual(characterResponse);
     expect(service.remove).toHaveBeenCalledTimes(1);
     expect(service.remove).toHaveBeenCalledWith(id);
   });

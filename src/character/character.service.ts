@@ -44,7 +44,7 @@ export class CharacterService {
   }
 
   async update(
-    id: string,
+    id: Types.ObjectId,
     updateCharacterDto: UpdateCharacterDto,
   ): Promise<Character> {
     const character = await this.characterModel.findByIdAndUpdate(
@@ -58,7 +58,7 @@ export class CharacterService {
     return character;
   }
 
-  async remove(id: string) {
+  async remove(id: Types.ObjectId) {
     const character = await this.characterModel.findByIdAndDelete(id);
     if (!character) {
       throw new NotFoundException('Character not found');

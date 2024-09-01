@@ -7,13 +7,13 @@ import {
   Param,
   Delete,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CharacterService } from './character.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
 import { SearchCharactersDto } from './dto/search-characters.dto';
 import { Types } from 'mongoose';
-import { ValidateObjectIdPipe } from 'src/pipes/validate-object-id/validate-object-id.pipe';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -26,7 +26,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Character } from './entities/character.entity';
-
+import { ValidateObjectIdPipe } from '../pipes/validate-object-id/validate-object-id.pipe';
+import { AlignWithClassInterceptor } from '../interceptors/align-with-class/align-with-class.interceptor';
 @ApiTags('character')
 @ApiBadRequestResponse()
 @ApiInternalServerErrorResponse()
@@ -50,8 +51,8 @@ export class CharacterController {
     type: [Character],
     description: 'List of characters',
   })
+  @UseInterceptors(new AlignWithClassInterceptor(Character))
   search(@Query() query: SearchCharactersDto): Promise<Character[]> {
-    
     return this.characterService.search(query);
   }
 
@@ -60,6 +61,7 @@ export class CharacterController {
   @ApiParam({ name: 'id', type: String, description: 'ID of the character' })
   @ApiOkResponse()
   @ApiNotFoundResponse()
+  @UseInterceptors(new AlignWithClassInterceptor(Character))
   findOne(
     @Param('id', ValidateObjectIdPipe) id: Types.ObjectId,
   ): Promise<Character> {
@@ -71,8 +73,9 @@ export class CharacterController {
   @ApiParam({ name: 'id', type: String, description: 'ID of the character' })
   @ApiOkResponse()
   @ApiNotFoundResponse()
+  @UseInterceptors(new AlignWithClassInterceptor(Character))
   update(
-    @Param('id', ValidateObjectIdPipe) id: string,
+    @Param('id', ValidateObjectIdPipe) id: Types.ObjectId,
     @Body() updateCharacterDto: UpdateCharacterDto,
   ): Promise<Character> {
     return this.characterService.update(id, updateCharacterDto);
@@ -83,7 +86,10 @@ export class CharacterController {
   @ApiParam({ name: 'id', type: String, description: 'ID of the character' })
   @ApiOkResponse()
   @ApiNotFoundResponse()
-  remove(@Param('id', ValidateObjectIdPipe) id: string): Promise<Character> {
+  @UseInterceptors(new AlignWithClassInterceptor(Character))
+  remove(
+    @Param('id', ValidateObjectIdPipe) id: Types.ObjectId,
+  ): Promise<Character> {
     return this.characterService.remove(id);
   }
 }

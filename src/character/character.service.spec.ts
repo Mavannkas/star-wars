@@ -3,6 +3,7 @@ import { CharacterService } from './character.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Character } from './entities/character.entity';
 import mongoose, { Model, Types } from 'mongoose';
+import { SearchCharactersDto } from './dto/search-characters.dto';
 
 const dummyCharacter: Character & { _id: Types.ObjectId } = {
   _id: new mongoose.Types.ObjectId(),
@@ -10,6 +11,8 @@ const dummyCharacter: Character & { _id: Types.ObjectId } = {
   episodes: ['1', '2'],
   planet: 'Earth',
 };
+
+const id = new mongoose.Types.ObjectId();
 
 describe('CharacterService', () => {
   let service: CharacterService;
@@ -55,24 +58,43 @@ describe('CharacterService', () => {
     expect(createSpy).toHaveBeenCalledTimes(1);
     expect(createSpy).toHaveBeenCalledWith(dto);
   });
+
   it('should search character based on query', async () => {
     // Given
-    const query = { name: 'Test' } as any;
-    const findSpy = jest.spyOn(model, 'find');
-    const expectedQuery = { ...query, page: 1, limit: 10 };
+    const skipMock = jest.fn().mockResolvedValue([dummyCharacter]);
+    const limitMock = jest.fn().mockReturnValue({
+      skip: skipMock,
+    });
+    model.find = jest.fn().mockReturnValue({
+      limit: limitMock,
+    });
+    const query = {
+      limit: '10',
+      page: '4',
+      episode: 'episode1',
+      name: 'Luke',
+    } as SearchCharactersDto;
+
+    const expectedFilter = {
+      name: 'Luke',
+      episodes: { $in: ['episode1'] },
+    };
 
     // When
     const response = await service.search(query);
 
     // Then
     expect(response).toEqual([dummyCharacter]);
-    expect(findSpy).toHaveBeenCalledTimes(1);
-    expect(findSpy).toHaveBeenCalledWith(expectedQuery);
+    expect(model.find).toHaveBeenCalledTimes(1);
+    expect(model.find).toHaveBeenCalledWith(expectedFilter);
+    expect(limitMock).toHaveBeenCalledWith(10);
+    expect(skipMock).toHaveBeenCalledWith(30);
   });
   it('should find character by id', async () => {
     // Given
-    const id = '1';
-    const findByIdSpy = jest.spyOn(model, 'findById');
+    const findByIdSpy = jest
+      .spyOn(model, 'findById')
+      .mockResolvedValue(dummyCharacter);
 
     // When
     const response = await service.findOne(id);
@@ -84,7 +106,6 @@ describe('CharacterService', () => {
   });
   it('should update character by id', async () => {
     // Given
-    const id = '1';
     const dto = { name: 'Test' } as Character;
     const findByIdAndUpdateSpy = jest.spyOn(model, 'findByIdAndUpdate');
 
@@ -98,7 +119,6 @@ describe('CharacterService', () => {
   });
   it('should remove character by id', async () => {
     // Given
-    const id = '1';
     const findByIdAndDeleteSpy = jest.spyOn(model, 'findByIdAndDelete');
 
     // When

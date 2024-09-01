@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiExtraModels, ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { HydratedDocument, Types } from 'mongoose';
 
 export type CharacterDocument = HydratedDocument<Character>;
@@ -25,6 +26,9 @@ export class Character {
   @Prop()
   @ApiProperty({ type: String, description: 'Planet of the character' })
   planet?: string;
+
+  @Exclude()
+  __v?: number;
 }
 
 export const CharacterSchema = SchemaFactory.createForClass(Character);
