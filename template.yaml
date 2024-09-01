@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  DocumentDBPassword:
+    Type: String
+    NoEcho: true
+    Description: 'The password for the DocumentDB admin user'
+
 Resources:
   StarWarsFunction:
     Type: AWS::Serverless::Function
@@ -7,16 +14,24 @@ Resources:
       Handler: ./dist/serverless.handler
       Runtime: nodejs20.x
       MemorySize: 512
-      Timeout: 100
+      Timeout: 60
       Environment:
         Variables:
           NODE_ENV: production
-          MONGOOSE_URL: mongodb://localhost:27017/star-wars
+          MONGOOSE_URL: !Sub
+            - 'mongodb://${Endpoint}:${Port}/star-wars'
+            - Port: !GetAtt DocumentDBInstance.Port
+              Endpoint: !GetAtt DocumentDBCluster.Endpoint
       Events:
-        Api:
+        CharacterRootApi:
           Type: Api
           Properties:
-            Path: /
+            Path: /character
+            Method: ANY
+        CharacterApi:
+          Type: Api
+          Properties:
+            Path: /character/{proxy+}
             Method: ANY
         DocumentationRoot:
           Type: Api
@@ -29,7 +44,44 @@ Resources:
             Path: /doc/{proxy+}
             Method: GET
 
+  DocumentDBCluster:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::DocDB::DBCluster
+    Properties:
+      MasterUsername: admin
+      MasterUserPassword: !Ref DocumentDBPassword
+      DBClusterIdentifier: star-wars-cluster
+      EngineVersion: '4.0.0'
+      VpcSecurityGroupIds:
+        - !Ref DocumentDBSecurityGroup
+
+  DocumentDBInstance:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::DocDB::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref DocumentDBCluster
+      DBInstanceClass: db.t4g.medium
+      DBInstanceIdentifier: star-wars-instance
+
+  DocumentDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 'Security group for DocumentDB'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 27017
+          ToPort: 27017
+          CidrIp: 0.0.0.0/0
+
 Outputs:
   StarWarsApi:
     Description: 'API Gateway endpoint URL for the HelloWorld function'
     Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+  DocumentDBEndpoint:
+    Description: 'DocumentDB Cluster Endpoint'
+    Value: !Sub
+      - 'mongodb://${Endpoint}:${Port}/star-wars'
+      - Port: !GetAtt DocumentDBInstance.Port
+        Endpoint: !GetAtt DocumentDBCluster.Endpoint
