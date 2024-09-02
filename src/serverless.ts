@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Server } from 'http';
-import { APIGatewayProxyHandler, APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import { APIGatewayProxyHandler } from 'aws-lambda';
 import { createServer, proxy } from 'aws-serverless-express';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import * as express from 'express';
@@ -14,6 +14,10 @@ const pemSource =
 export const pemLocation = '/tmp/global-bundle.pem';
 
 async function bootstrap(): Promise<Server> {
+  const file = await fetch(pemSource);
+  const pem = await file.text();
+  await writeFile(pemLocation, pem);
+
   const expressApp = express();
   const app = await NestFactory.create(
     AppModule,
@@ -28,8 +32,6 @@ async function bootstrap(): Promise<Server> {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('doc', app, document);
-  const file = await fetch(pemSource);
-  await writeFile(pemLocation, await file.text());
   await app.init();
   return createServer(expressApp);
 }

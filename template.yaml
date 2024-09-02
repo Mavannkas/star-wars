@@ -164,9 +164,9 @@ Resources:
         Variables:
           NODE_ENV: production
           MONGO_USER: StarWarsAdmin
-          MONGO_PASSWORD_SECRET_ARN: !Ref MongoPasswordSecret
-          MONGO_DB_HOST: !GetAtt DocumentDBCluster.Endpoint
-          MONGO_DB_PORT: !GetAtt DocumentDBCluster.Port
+          MONGO_SECRET_ID: !Ref MongoPasswordSecret
+          MONGO_HOST: !GetAtt DocumentDBCluster.Endpoint
+          MONGO_PORT: !GetAtt DocumentDBCluster.Port
           MONGO_DB_NAME: star-wars
           MONGO_REPLICA_SET: rs0
           MONGO_READ_PREFERENCE: primaryPreferred
