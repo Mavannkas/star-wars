@@ -23,8 +23,9 @@ export class CharacterService {
 
   async search(query: SearchCharactersDto): Promise<Character[]> {
     const { limit = 10, page = 1, episode, ...rest } = query;
-    console.log(rest);
-    const filter: any = { ...rest };
+    const filter: Pick<SearchCharactersDto, 'planet'> & {
+      episodes?: { $in: string[] };
+    } = { ...rest };
 
     if (episode) {
       filter.episodes = { $in: [episode] };
