@@ -8,6 +8,147 @@ Parameters:
     Description: 'The password for the DocumentDB admin user'
 
 Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: MyVPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.5.0/24
+      AvailabilityZone: !Select [0, !GetAZs ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select [0, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.4.0/24
+      AvailabilityZone: !Select [1, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet2
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: MyInternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: PublicRouteTable
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: PrivateRouteTable1
+
+  PrivateSubnet2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: PrivateRouteTable2
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref PublicSubnet
+      Tags:
+        - Key: Name
+          Value: MyNatGateway
+
+  PrivateSubnet1DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateSubnet1RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet2DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateSubnet2RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateSubnet1RouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateSubnet2RouteTable
+
+  MongoPasswordSecret:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub 'star-wars-${AWS::StackName}-password'
+      Description: 'The password for the DocumentDB admin user'
+      SecretString: !Ref DocumentDBPassword
+
   StarWarsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -15,13 +156,27 @@ Resources:
       Runtime: nodejs20.x
       MemorySize: 512
       Timeout: 60
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref MongoPasswordSecret
+        - AWSLambdaVPCAccessExecutionRole
       Environment:
         Variables:
           NODE_ENV: production
-          MONGOOSE_URL: !Sub
-            - 'mongodb://${Endpoint}:${Port}/star-wars'
-            - Port: !GetAtt DocumentDBInstance.Port
-              Endpoint: !GetAtt DocumentDBCluster.Endpoint
+          MONGO_USER: StarWarsAdmin
+          MONGO_PASSWORD_SECRET_ARN: !Ref MongoPasswordSecret
+          MONGO_DB_HOST: !GetAtt DocumentDBCluster.Endpoint
+          MONGO_DB_PORT: !GetAtt DocumentDBCluster.Port
+          MONGO_DB_NAME: star-wars
+          MONGO_REPLICA_SET: rs0
+          MONGO_READ_PREFERENCE: primaryPreferred
+          MONGO_RETRY_WRITES: false
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt DocumentDBSecurityGroup.GroupId
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
       Events:
         CharacterRootApi:
           Type: Api
@@ -44,17 +199,27 @@ Resources:
             Path: /doc/{proxy+}
             Method: GET
 
+  DocumentDBSubnetGroup:
+    Type: AWS::DocDB::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: !Sub ${AWS::StackName}-subnet-group
+      DBSubnetGroupDescription: 'Subnet group for DocumentDB'
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
   DocumentDBCluster:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Type: AWS::DocDB::DBCluster
     Properties:
-      MasterUsername: admin
+      MasterUsername: StarWarsAdmin
       MasterUserPassword: !Ref DocumentDBPassword
-      DBClusterIdentifier: star-wars-cluster
+      DBClusterIdentifier: !Sub ${AWS::StackName}-cluster2
       EngineVersion: '4.0.0'
       VpcSecurityGroupIds:
-        - !Ref DocumentDBSecurityGroup
+        - !GetAtt DocumentDBSecurityGroup.GroupId
+      DBSubnetGroupName: !Ref DocumentDBSubnetGroup
 
   DocumentDBInstance:
     DeletionPolicy: Delete
@@ -63,12 +228,13 @@ Resources:
     Properties:
       DBClusterIdentifier: !Ref DocumentDBCluster
       DBInstanceClass: db.t4g.medium
-      DBInstanceIdentifier: star-wars-instance
+      DBInstanceIdentifier: !Sub ${AWS::StackName}-instance2
 
   DocumentDBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: 'Security group for DocumentDB'
+      VpcId: !Ref MyVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 27017
@@ -77,11 +243,11 @@ Resources:
 
 Outputs:
   StarWarsApi:
-    Description: 'API Gateway endpoint URL for the HelloWorld function'
+    Description: 'API Gateway endpoint URL for the  function'
     Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
-  DocumentDBEndpoint:
-    Description: 'DocumentDB Cluster Endpoint'
-    Value: !Sub
-      - 'mongodb://${Endpoint}:${Port}/star-wars'
-      - Port: !GetAtt DocumentDBInstance.Port
-        Endpoint: !GetAtt DocumentDBCluster.Endpoint
+  CharacterRootApi:
+    Description: 'API Gateway endpoint URL for the /character endpoint'
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/character'
+  DocumentationRoot:
+    Description: 'API Gateway endpoint URL for the /doc endpoint'
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/doc'

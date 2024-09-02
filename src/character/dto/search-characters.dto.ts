@@ -25,7 +25,6 @@ export class SearchCharactersDto {
 
   @IsOptional()
   @IsNumberString()
-  //Min value 1
   @Validate((value) => +value >= 1, {
     message: 'Page number should be greater than or equal to 1',
   })

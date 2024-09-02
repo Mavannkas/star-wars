@@ -3,13 +3,10 @@ import {
   ArrayMaxSize,
   ArrayNotEmpty,
   IsArray,
-  IsEmpty,
   IsNotEmpty,
   IsOptional,
   IsString,
-  Max,
   MaxLength,
-  Min,
   MinLength,
 } from 'class-validator';
 

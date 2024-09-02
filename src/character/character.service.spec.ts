@@ -129,4 +129,30 @@ describe('CharacterService', () => {
     expect(findByIdAndDeleteSpy).toHaveBeenCalledTimes(1);
     expect(findByIdAndDeleteSpy).toHaveBeenCalledWith(id);
   });
+
+  it('should throw not found exception when character not found for findById', async () => {
+    // Given
+    jest.spyOn(model, 'findById').mockResolvedValue(null);
+
+    // When & Then
+    expect(service.findOne(id)).rejects.toThrow('Character not found');
+  });
+
+  it('should throw not found exception when character not found for Update', async () => {
+    // Given
+    jest.spyOn(model, 'findByIdAndUpdate').mockResolvedValue(null);
+
+    // When & Then
+    expect(service.update(id, {} as Character)).rejects.toThrow(
+      'Character not found',
+    );
+  });
+
+  it('should throw not found exception when character not found for Delete', async () => {
+    // Given
+    jest.spyOn(model, 'findByIdAndDelete').mockResolvedValue(null);
+
+    // When & Then
+    expect(service.remove(id)).rejects.toThrow('Character not found');
+  });
 });
